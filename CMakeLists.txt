@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
-set(CMAKE_CXX_FLAGS "-std=c++17 -O0")
+set(CMAKE_CXX_FLAGS "-std=c++23 -O0")
 project(SNO)
 
 set(CMAKE_BUILD_TYPE Release)
