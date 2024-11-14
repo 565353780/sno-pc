@@ -1,15 +1,15 @@
 #pragma once
 #ifndef OCTTREE_H
 #define OCTTREE_H
-#define EIGEN_USE_MKL_ALL
-#define MKL_INT int
+// #define EIGEN_USE_MKL_ALL
+// #define MKL_INT int
 #include "ANN/ANN.h"
 #include "HLBFGS/HLBFGS.h"
 #include "basicStructure.h"
 #include "octNode.h"
 #include "pointCloud.h"
 #include <Eigen/CholmodSupport>
-#include <Eigen/PardisoSupport>
+// #include <Eigen/PardisoSupport>
 #include <Eigen/Sparse>
 #include <Eigen/SparseLU>
 #include <vector>
@@ -43,8 +43,8 @@ public:
   Eigen::SparseMatrix<double> P1_T;
   Eigen::SparseMatrix<double> P2;
 
-  Eigen::PardisoLLT<Eigen::SparseMatrix<double>> A_solver;
-  // Eigen::CholmodSupernodalLLT<Eigen::SparseMatrix<double>> A_solver;
+  // Eigen::PardisoLLT<Eigen::SparseMatrix<double>> A_solver;
+  Eigen::CholmodSupernodalLLT<Eigen::SparseMatrix<double>> A_solver;
   void energy_evaluation_w_uv(const std::vector<double> &x, double &f,
                               std::vector<double> &g);
   void energy_evaluation_w_print_p(const std::vector<double> &x,
