@@ -8,12 +8,13 @@ set(CUDA_INCLUDE_DIR "/usr/local/cuda/include")
 #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-stack-protector")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-stack-protector")
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 #find_package(MKL REQUIRED)
+find_package(OpenMP REQUIRED)
 
 include_directories(./src/)
 include_directories(./3rd/eigen-3.4.0/)
@@ -39,4 +40,7 @@ list(FILTER SRC EXCLUDE REGEX "main.cpp")
 add_executable(${PROJECT_NAME} ./src/main.cpp ${SRC} ${ANN_SRC} ${HLBFGS_SRC})
 
 #target_link_libraries(${PROJECT_NAME} PRIVATE MKL::MKL)
+if(OpenMP_CXX_FOUND)
+  target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
+endif()
 target_link_libraries(${PROJECT_NAME} PRIVATE ${SUITESPARSE_LIBS})

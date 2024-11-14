@@ -1,7 +1,7 @@
 #ifndef HLBFGS_H
 #define HLBFGS_H
 
-// #define USE_OPENMP
+#define USE_OPENMP
 
 #include <cstring>
 #include <vector>

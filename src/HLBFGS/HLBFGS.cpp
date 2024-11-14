@@ -432,13 +432,18 @@ void HLBFGS::optimize_without_constraints(double *init_sol, size_t max_iter,
       xmax = std::max(xmax, std::fabs(x[i]));
       diffmax = std::max(diffmax, std::fabs(x[i] - prev_x[i]));
     }
+
     std::cout << "==ITER: " << info[2] + info[16] << ", f: " << f << std::endl;
     *it = info[2] + info[16];
     if (linesearch_info != 1) {
       print_message(info[5] != 0, 1);
       break;
     }
-    if (gnorm / xnorm * xmax <= parameters[5]) {
+    if (gnorm / xnorm <= parameters[5]) {
+      // FIXME: skip this check for better covergence
+      continue;
+      std::cout << "||g||/max(1,||x||) = " << gnorm << "/" << xnorm << " = "
+                << gnorm / xnorm << std::endl;
       print_message(info[5] != 0, 2);
       break;
     }
