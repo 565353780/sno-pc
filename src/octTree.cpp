@@ -11,27 +11,41 @@ typedef std::pair<int, double> pad;
 OctTree::OctTree(PointCloud *p) {
   pc = p;
   unitPointCloud();
-  std::cout << "buildTree" << std::endl;
+
+  std::cout << "[INFO][OctTree::OctTree]" << std::endl;
+  std::cout << "\t start buildTree..." << std::endl;
   buildTree();
-  std::cout << "get_outNode" << std::endl;
+
+  std::cout << "[INFO][OctTree::OctTree]" << std::endl;
+  std::cout << "\t start get_outNode..." << std::endl;
   get_outNode();
-  std::cout << "find_Ngbr" << std::endl;
+
+  std::cout << "[INFO][OctTree::OctTree]" << std::endl;
+  std::cout << "\t start find_Ngbr..." << std::endl;
   find_Ngbr();
-  std::cout << "find_around" << std::endl;
+
+  std::cout << "[INFO][OctTree::OctTree]" << std::endl;
+  std::cout << "\t start find_around..." << std::endl;
   find_around();
-  std::cout << "calc_B" << std::endl;
+
+  std::cout << "[INFO][OctTree::OctTree]" << std::endl;
+  std::cout << "\t start calc_B..." << std::endl;
   calc_B();
 
-  std::cout << "calc_A" << std::endl;
+  std::cout << "[INFO][OctTree::OctTree]" << std::endl;
+  std::cout << "\t start calc_A..." << std::endl;
   if (!calc_A()) {
     std::cerr << "[ERROR][OctTree::OctTree]" << std::endl;
     std::cerr << "\t calc_A failed!" << std::endl;
     return;
   }
 
-  std::cout << "find_near_points" << std::endl;
+  std::cout << "[INFO][OctTree::OctTree]" << std::endl;
+  std::cout << "\t start find_near_points..." << std::endl;
   find_near_points();
-  std::cout << "calc_P" << std::endl;
+
+  std::cout << "[INFO][OctTree::OctTree]" << std::endl;
+  std::cout << "\t start calc_P..." << std::endl;
   calc_P();
 }
 
