@@ -1,15 +1,16 @@
 #pragma once
 #ifndef OCTTREE_H
 #define OCTTREE_H
-#define EIGEN_USE_MKL_ALL
-#define MKL_INT int
+// #define EIGEN_USE_MKL_ALL
 #include "ANN/ANN.h"
 #include "HLBFGS/HLBFGS.h"
 #include "basicStructure.h"
 #include "octNode.h"
 #include "pointCloud.h"
-#include <Eigen/PardisoSupport>
+// #include <Eigen/PardisoSupport>
+#include <Eigen/CholmodSupport>
 #include <Eigen/Sparse>
+#include <Eigen/SparseLU>
 #include <vector>
 
 class OctTree {
@@ -41,7 +42,8 @@ public:
   Eigen::SparseMatrix<double> P1_T;
   Eigen::SparseMatrix<double> P2;
 
-  Eigen::PardisoLLT<Eigen::SparseMatrix<double>> A_solver;
+  // Eigen::PardisoLLT<Eigen::SparseMatrix<double>> A_solver;
+  Eigen::CholmodSupernodalLLT<Eigen::SparseMatrix<double>> A_solver;
   void energy_evaluation_w_uv(const std::vector<double> &x, double &f,
                               std::vector<double> &g);
   void energy_evaluation_w_print_p(const std::vector<double> &x,
@@ -67,7 +69,7 @@ private:
   void buildTree();
   void find_around();
   void calc_B();
-  void calc_A();
+  const bool calc_A();
   void calc_P();
   void find_near_points();
   void find_Ngbr();

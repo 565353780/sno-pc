@@ -6,7 +6,6 @@
 #include <fstream>
 #include <iostream>
 #include <string>
-#include <unordered_set>
 
 void writeResult(std::string filePath, std::vector<Point> points,
                  std::vector<double> normal) {
@@ -113,6 +112,10 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
+  if (!std::filesystem::exists(output_folder_path)) {
+    std::filesystem::create_directories(output_folder_path);
+  }
+
   const std::string input_xyz_filename =
       std::filesystem::path(input_xyz_file_path).filename();
 
@@ -139,31 +142,12 @@ int main(int argc, char *argv[]) {
 
   OctTree octree(&pointcloud);
 
-  std::vector<Point> points;
-
-  if (DEBUG) {
-    for (int i = 0; i < pointcloud.points.size(); i++) {
-      points.push_back(octree.points[i]);
-    }
-
-    for (int i = 0; i < octree.nopNode.size(); i++) {
-      points.push_back(octree.nodeArr[octree.nopNode[i]]->center);
-    }
-    // writeOctreeNode(output_folder_path + fileName + "_grid_p_start" + ".ply",
-    // points, octree, uv);
-  }
-
   octree.optimize_LBFS_w_uv(uv);
 
   for (int i = 0; i < N; i++) {
     nor[3 * i] = sin(uv[2 * i]) * cos(uv[2 * i + 1]);
     nor[3 * i + 1] = sin(uv[2 * i]) * sin(uv[2 * i + 1]);
     nor[3 * i + 2] = cos(uv[2 * i]);
-  }
-  if (DEBUG) {
-    writeOctreeNode(output_folder_path + input_xyz_filename + "_grid_p_end" +
-                        ".ply",
-                    points, octree, uv);
   }
 
   writeResult(output_folder_path + input_xyz_filename + "_res" + type,

@@ -1,6 +1,11 @@
-sudo apt install -y gpg-agent wget
-wget -O- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | gpg --dearmor | sudo tee /usr/share/keyrings/oneapi-archive-keyring.gpg >/dev/null
-echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" | sudo tee /etc/apt/sources.list.d/oneAPI.list
-sudo apt update
+sudo apt install libeigen3-dev libopenblas-dev libgmp-dev libmpfr-dev
 
-sudo apt install intel-oneapi-mkl-devel libeigen3-dev
+cd ./3rd/SuiteSparse-7.8.3/
+
+rm -rf build
+
+mkdir build
+cd build
+cmake -DCMAKE_INSTALL_PREFIX=./install ..
+make -j
+make install
