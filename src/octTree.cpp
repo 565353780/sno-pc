@@ -892,15 +892,16 @@ void OctTree::energy_evaluation_w_uv(const std::vector<double> &x, double &f,
   }
   Eigen::VectorXd tempbv =
       B[0] * normal[0] + B[1] * normal[1] + B[2] * normal[2];
-  std::cout << "test: 1" << std::endl;
+
   Eigen::VectorXd alp = A_solver.solve(tempbv);
-  if (A_solver.info() != Eigen::Success) {
-    std::cerr << "[ERROR][OctTree::energy_evaluation_w_uv]" << std::endl;
-    std::cerr << "\t solve tempbv failed!" << std::endl;
-    return;
+  if (false) {
+    if (A_solver.info() != Eigen::Success) {
+      std::cerr << "[ERROR][OctTree::energy_evaluation_w_uv]" << std::endl;
+      std::cerr << "\t solve tempbv failed!" << std::endl;
+      return;
+    }
   }
 
-  std::cout << "test: 2" << std::endl;
   Eigen::VectorXd mu = P * alp;
   Eigen::VectorXd mu1 = P1 * alp;
   std::cout << "mean: " << mu.mean() << std::endl;

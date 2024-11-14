@@ -5,12 +5,15 @@ set(SUITESPARSE_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/3rd/SuiteSparse-7.8.3/b
 set(SUITESPARSE_LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/3rd/SuiteSparse-7.8.3/build/install/lib")
 set(CUDA_INCLUDE_DIR "/usr/local/cuda/include")
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-stack-protector")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-stack-protector")
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-#find_package(Eigen3 REQUIRED)
+find_package(MKL REQUIRED)
 
 include_directories(./src/)
 include_directories(./3rd/eigen-3.4.0/)
@@ -35,5 +38,5 @@ list(FILTER SRC EXCLUDE REGEX "main.cpp")
 
 add_executable(${PROJECT_NAME} ./src/main.cpp ${SRC} ${ANN_SRC} ${HLBFGS_SRC})
 
-#target_link_libraries(${PROJECT_NAME} PRIVATE Eigen3::Eigen)
+target_link_libraries(${PROJECT_NAME} PRIVATE MKL::MKL)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${SUITESPARSE_LIBS})
