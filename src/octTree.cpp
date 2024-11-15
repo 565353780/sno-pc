@@ -579,62 +579,87 @@ void OctTree::calc_B() {
   std::vector<Td> tripletList_B[3];
   std::vector<Td> tripletList_Bw[3];
   wds.resize(points.size(), 0);
+
+  int completed = 0;
+
   std::cout << "[INFO][OctTree::calc_B]" << std::endl;
   std::cout << "\t start calculating B..." << std::endl;
-  for (int i = 0; i < points.size(); ++i) {
-    Point p = points[i];
-    std::unordered_set<int> aroSet;
-    std::vector<double> alpha(Ngbr[i].size(), 0);
-    // double d = DEPLEN[pdep[i] - 1];
-    for (int j = 0; j < Ngbr[i].size(); ++j) {
-      OctNode *nodej = nodeArr[Ngbr[i][j]];
-      for (int k = 0; k < nodej->around.size(); ++k) {
-        if (!aroSet.count(nodej->around[k])) {
-          aroSet.insert(nodej->around[k]);
-        }
-      }
-      Point oj = nodej->center;
-      // alpha[j] = pow(2, pdep[i] - 1) * (1 - abs(p.x - oj.x) / d) * (1 -
-      // abs(p.y - oj.y) / d) * (1 - abs(p.z - oj.z) / d);
-      /*alpha[j] = pow(2, pdep[i] - 1);*/
-      alpha[j] = 1;
-    }
-    for (auto it : aroSet) {
-      OctNode *nodes = nodeArr[it];
-      Point ps = nodes->center;
-      int deps = nodes->depth;
-      double wn[3] = {0, 0, 0};
-      double kpsr = 0;
+#pragma omp parallel
+  {
+    std::vector<Td> localTripletList_B[3];
+#pragma omp for
+    for (int i = 0; i < points.size(); ++i) {
+      // Point p = points[i];
+      std::unordered_set<int> aroSet;
+      std::vector<double> alpha(Ngbr[i].size(), 0);
+      // double d = DEPLEN[pdep[i] - 1];
       for (int j = 0; j < Ngbr[i].size(); ++j) {
-        OctNode *nodej = nodeArr[Ngbr[i][j]];
-        Point pj = nodej->center;
-        int depj = nodej->depth;
-        double DBBx = guassInt_DBB(ps.x, deps, pj.x, depj);
-        double BBx = guassInt_BB(ps.x, deps, pj.x, depj);
-        double DBBy = guassInt_DBB(ps.y, deps, pj.y, depj);
-        double BBy = guassInt_BB(ps.y, deps, pj.y, depj);
-        double DBBz = guassInt_DBB(ps.z, deps, pj.z, depj);
-        double BBz = guassInt_BB(ps.z, deps, pj.z, depj);
-        wn[0] += alpha[j] * DBBx * BBy * BBz;
-        wn[1] += alpha[j] * BBx * DBBy * BBz;
-        wn[2] += alpha[j] * BBx * BBy * DBBz;
-        kpsr += sigma_g * Fo(ps, pj, depj);
-
-        for (int t = 0; t < nodes->inPointId.size(); t++) {
-          int ptid = nodes->inPointId[t];
-          Point pt = nodes->inPoints[t];
-          wds[ptid] += alpha[j] * Fo(pt, nodej->center, depj);
+        const OctNode *nodej = nodeArr[Ngbr[i][j]];
+        for (int k = 0; k < nodej->around.size(); ++k) {
+          if (!aroSet.count(nodej->around[k])) {
+            aroSet.insert(nodej->around[k]);
+          }
         }
+        // Point oj = nodej->center;
+        // alpha[j] = pow(2, pdep[i] - 1) * (1 - abs(p.x - oj.x) / d) * (1 -
+        // abs(p.y - oj.y) / d) * (1 - abs(p.z - oj.z) / d);
+        /*alpha[j] = pow(2, pdep[i] - 1);*/
+        alpha[j] = 1;
       }
-      // std::cout << wn[0] << std::endl;
-      tripletList_B[0].push_back(Td(nodes->lnid, i, wn[0]));
-      tripletList_B[1].push_back(Td(nodes->lnid, i, wn[1]));
-      tripletList_B[2].push_back(Td(nodes->lnid, i, wn[2]));
+      for (auto it : aroSet) {
+        const OctNode *nodes = nodeArr[it];
+        const Point ps = nodes->center;
+        const int deps = nodes->depth;
+        double wn[3] = {0, 0, 0};
+        double kpsr = 0;
+        for (int j = 0; j < Ngbr[i].size(); ++j) {
+          const OctNode *nodej = nodeArr[Ngbr[i][j]];
+          const Point pj = nodej->center;
+          const int depj = nodej->depth;
+          const double DBBx = guassInt_DBB(ps.x, deps, pj.x, depj);
+          const double BBx = guassInt_BB(ps.x, deps, pj.x, depj);
+          const double DBBy = guassInt_DBB(ps.y, deps, pj.y, depj);
+          const double BBy = guassInt_BB(ps.y, deps, pj.y, depj);
+          const double DBBz = guassInt_DBB(ps.z, deps, pj.z, depj);
+          const double BBz = guassInt_BB(ps.z, deps, pj.z, depj);
+          wn[0] += alpha[j] * DBBx * BBy * BBz;
+          wn[1] += alpha[j] * BBx * DBBy * BBz;
+          wn[2] += alpha[j] * BBx * BBy * DBBz;
+          kpsr += sigma_g * Fo(ps, pj, depj);
+
+          for (int t = 0; t < nodes->inPointId.size(); ++t) {
+            const int ptid = nodes->inPointId[t];
+            const Point pt = nodes->inPoints[t];
+            wds[ptid] += alpha[j] * Fo(pt, pj, depj);
+          }
+        }
+        // std::cout << wn[0] << std::endl;
+        localTripletList_B[0].push_back(Td(nodes->lnid, i, wn[0]));
+        localTripletList_B[1].push_back(Td(nodes->lnid, i, wn[1]));
+        localTripletList_B[2].push_back(Td(nodes->lnid, i, wn[2]));
+      }
+
+#pragma omp atomic
+      ++completed;
+      if (completed % 100 == 0) {
+#pragma omp critical
+        std::cout << "\r\t running at point " << completed << " / "
+                  << points.size() << " , " << 100.0 * completed / points.size()
+                  << " % ...    ";
+      }
     }
 
-    if (i % 100 == 0) {
-      std::cout << "\r\t running at point " << i + 1 << " / " << points.size()
-                << " , " << 100.0 * (i + 1) / points.size() << " % ...    ";
+#pragma omp critical
+    {
+      tripletList_B[0].insert(tripletList_B[0].end(),
+                              localTripletList_B[0].begin(),
+                              localTripletList_B[0].end());
+      tripletList_B[1].insert(tripletList_B[1].end(),
+                              localTripletList_B[1].begin(),
+                              localTripletList_B[1].end());
+      tripletList_B[2].insert(tripletList_B[2].end(),
+                              localTripletList_B[2].begin(),
+                              localTripletList_B[2].end());
     }
   }
   std::cout << std::endl;
@@ -757,7 +782,7 @@ void OctTree::calc_P() {
           tripletList_p2.push_back(Td(cnt, nodej->lnid, v));
         }
       }
-      cnt++;
+      ++cnt;
     } else {
       for (int j = 0; j < nodei->around.size(); ++j) {
         OctNode *nodej = nodeArr[nodei->around[j]];
@@ -817,7 +842,7 @@ void OctTree::find_near_points() {
       dataPts[cnt][0] = o.x;
       dataPts[cnt][1] = o.y;
       dataPts[cnt][2] = o.z;
-      cnt++;
+      ++cnt;
     }
   }
 
