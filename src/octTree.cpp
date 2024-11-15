@@ -665,8 +665,8 @@ void OctTree::calc_B() {
   std::cout << std::endl;
 
   for (int i = 0; i < tripletList_B[0].size(); ++i) {
-    int row = tripletList_B[0][i].row();
-    int col = tripletList_B[0][i].col();
+    const int row = tripletList_B[0][i].row();
+    const int col = tripletList_B[0][i].col();
     // std::cout <<  wds[col] << std::endl;
     if (abs(wds[col]) < 1e-16) {
       // std::cout << "ERROR" << i << " " << col << " " << wds[col] <<

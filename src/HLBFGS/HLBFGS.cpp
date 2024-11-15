@@ -1,4 +1,5 @@
 #include "HLBFGS.h"
+#include "config.h"
 
 #ifdef USE_OPENMP
 #include <omp.h>
