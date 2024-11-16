@@ -405,7 +405,7 @@ void HLBFGS::optimize_without_constraints(double *init_sol, size_t max_iter,
       blinesearch = (linesearch_info == -1);
       if (blinesearch) {
         my_eval_funcgrad(f, 0, user_pointer);
-        info[1]++;
+        ++info[1];
       }
 
       if (info[9] == 1 &&
@@ -417,25 +417,23 @@ void HLBFGS::optimize_without_constraints(double *init_sol, size_t max_iter,
     } while (blinesearch);
 
     gnorm = HLBFGS_DNRM2(n_N_, g);
-    info[2]++;
+    ++info[2];
     if (newiteration_callback)
       (*newiteration_callback)(n_N_, variables_, f, gradient_, user_pointer);
-    /*(*newiteration_callback)(info[2], info[1], n_N_, variables_, f, gradient_,
-    gnorm, user_pointer)*/
-    ;
+
     double xnorm = HLBFGS_DNRM2(n_N_, x);
-    xnorm = 1 > xnorm ? 1 : xnorm;
+    xnorm = std::fmax(1.0, xnorm);
     rkeep[2] = gnorm;
     rkeep[8] = xnorm;
 
     double xmax = 0, diffmax = 0;
-    for (ptrdiff_t i = 0; i < (ptrdiff_t)n_N_; i++) {
-      xmax = std::max(xmax, std::fabs(x[i]));
-      diffmax = std::max(diffmax, std::fabs(x[i] - prev_x[i]));
+    for (ptrdiff_t i = 0; i < (ptrdiff_t)n_N_; ++i) {
+      xmax = std::fmax(xmax, std::fabs(x[i]));
+      diffmax = std::fmax(diffmax, std::fabs(x[i] - prev_x[i]));
     }
 
-    std::cout << "==ITER: " << info[2] + info[16] << ", f: " << f << std::endl;
     *it = info[2] + info[16];
+    std::cout << "==ITER: " << *it << ", f: " << f << std::endl;
     if (linesearch_info != 1) {
       print_message(info[5] != 0, 1);
       break;

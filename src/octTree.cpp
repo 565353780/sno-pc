@@ -914,12 +914,14 @@ void OctTree::clear_near_points() {
 }
 void OctTree::energy_evaluation_w_uv(const std::vector<double> &x, double &f,
                                      std::vector<double> &g) {
-  int N = points.size();
-  int leafN = leafNodeArr.size();
-  int nopN = nopNode.size();
+  const int N = points.size();
+  const int leafN = leafNodeArr.size();
+  const int nopN = nopNode.size();
+
   f = 0;
   g.clear();
   g.resize(2 * N, 0);
+
   Eigen::VectorXd normal[3];
   normal[0].resize(N);
   normal[1].resize(N);
@@ -929,10 +931,11 @@ void OctTree::energy_evaluation_w_uv(const std::vector<double> &x, double &f,
     normal[1](i) = sin(x[2 * i]) * sin(x[2 * i + 1]);
     normal[2](i) = cos(x[2 * i]);
   }
-  Eigen::VectorXd tempbv =
+
+  const Eigen::VectorXd tempbv =
       B[0] * normal[0] + B[1] * normal[1] + B[2] * normal[2];
 
-  Eigen::VectorXd alp = A_solver.solve(tempbv);
+  const Eigen::VectorXd alp = A_solver.solve(tempbv);
   if (false) {
     if (A_solver.info() != Eigen::Success) {
       std::cerr << "[ERROR][OctTree::energy_evaluation_w_uv]" << std::endl;
@@ -941,81 +944,106 @@ void OctTree::energy_evaluation_w_uv(const std::vector<double> &x, double &f,
     }
   }
 
-  Eigen::VectorXd mu = P * alp;
-  Eigen::VectorXd mu1 = P1 * alp;
+  const Eigen::VectorXd mu = P * alp;
   std::cout << "mean: " << mu.mean() << std::endl;
-  mu1 = mu1 - Eigen::VectorXd::Constant(nopN, mu.mean());
-  Eigen::VectorXd mu1_unit = mu1 / sig;
+
+  const Eigen::VectorXd mu1_unit =
+      (P1 * alp - Eigen::VectorXd::Constant(nopN, mu.mean())) / sig;
+
   Eigen::VectorXd Fdmu = Eigen::VectorXd::Constant(nopN, 0);
   int oi = 0;
   for (int i = 0; i < nopN; ++i) {
     double ln = 0;
-    int dep = nodeArr[nopNode[i]]->depth;
+    const int dep = nodeArr[nopNode[i]]->depth;
+
     for (int n = 0; n < near_points_id[i].size(); n++) {
       int pid = near_points_id[i][n];
       ln += near_points[i][3 * n] * normal[0](pid) +
             near_points[i][3 * n + 1] * normal[1](pid) +
             near_points[i][3 * n + 2] * normal[2](pid);
     }
-    double V = pow(2, nodeArr[nopNode[i]]->depth - APTDEPTH);
-    V = pow(DEPLEN[dep - 1], 3);
+
+    // FIXME: check which one is correct
+    //  double V = pow(2, nodeArr[nopNode[i]]->depth - APTDEPTH);
+    const double V = pow(DEPLEN[dep - 1], 3);
     ln *= V;
-    double p = 0.5 * erf(-mu1_unit(i) / sqrt(2));
+
+    double p;
     if (i == outNode[oi]) {
       p = -0.5;
+    } else {
+      p = 0.5 * erf(-mu1_unit(i) / sqrt(2));
     }
     f += ln * p;
-    double dpdmu =
-        (-1 / (sqrt(2 * PI) * sig)) * exp(-0.5 * pow(mu1_unit(i), 2));
+
+    double dpdmu = 0;
     if (i == outNode[oi]) {
       dpdmu = 0;
       ++oi;
+    } else {
+      dpdmu = (-1 / (sqrt(2 * PI) * sig)) * exp(-0.5 * pow(mu1_unit(i), 2));
     }
     Fdmu(i) = ln * dpdmu;
 
-    for (int n = 0; n < near_points_id[i].size(); n++) {
-      int pid = near_points_id[i][n];
-      double sinuj = sin(x[2 * pid]);
-      double cosuj = cos(x[2 * pid]);
-      double sinvj = sin(x[2 * pid + 1]);
-      double cosvj = cos(x[2 * pid + 1]);
-      g[2 * pid] += V * p *
-                    (near_points[i][3 * n] * cosuj * cosvj +
-                     near_points[i][3 * n + 1] * cosuj * sinvj +
-                     near_points[i][3 * n + 2] * -sinuj);
-      g[2 * pid + 1] += V * p *
-                        (near_points[i][3 * n] * -sinuj * sinvj +
-                         near_points[i][3 * n + 1] * sinuj * cosvj);
+#pragma omp parallel for
+    for (int n = 0; n < near_points_id[i].size(); ++n) {
+      const int pid = near_points_id[i][n];
+      const double sinuj = sin(x[2 * pid]);
+      const double cosuj = cos(x[2 * pid]);
+      const double sinvj = sin(x[2 * pid + 1]);
+      const double cosvj = cos(x[2 * pid + 1]);
+
+#pragma omp critical
+      {
+        g[2 * pid] += V * p *
+                      (near_points[i][3 * n] * cosuj * cosvj +
+                       near_points[i][3 * n + 1] * cosuj * sinvj +
+                       near_points[i][3 * n + 2] * -sinuj);
+
+        g[2 * pid + 1] += V * p *
+                          (near_points[i][3 * n] * -sinuj * sinvj +
+                           near_points[i][3 * n + 1] * sinuj * cosvj);
+      }
     }
   }
 
   std::cout << "F: " << f << " ";
 
-  double f0 = f;
-  double fmu = mu.mean();
+  const double f0 = f;
+  const double fmu = mu.mean();
   // f += gamma * sf * sf;
+
   Eigen::VectorXd Gdmu = Eigen::VectorXd::Constant(N, 0);
-  double gamma_ = gamma / N;
+
+  const double gamma_ = gamma / N;
+
   for (int i = 0; i < N; ++i) {
-    double d = mu(i) - fmu;
+    const double d = mu(i) - fmu;
     f += gamma_ * d * d;
     Gdmu(i) = 2 * gamma_ * d;
   }
   std::cout << "G: " << f - f0 << " ";
 
-  Eigen::VectorXd Edx = P1_T * Fdmu + P_T * Gdmu;
-  Eigen::VectorXd y = A_solver.solve(Edx);
+  const Eigen::VectorXd Edx = P1_T * Fdmu + P_T * Gdmu;
+  const Eigen::VectorXd y = A_solver.solve(Edx);
   // std::cout << "A solver iterations2: " << A_solver.iterations() <<
   // std::endl;
-  Eigen::VectorXd Edn[3] = {B_T[0] * y, B_T[1] * y, B_T[2] * y};
+
+  const Eigen::VectorXd Edn[3] = {B_T[0] * y, B_T[1] * y, B_T[2] * y};
+
+#pragma omp parallel for
   for (int j = 0; j < N; ++j) {
-    double sinuj = sin(x[2 * j]);
-    double cosuj = cos(x[2 * j]);
-    double sinvj = sin(x[2 * j + 1]);
-    double cosvj = cos(x[2 * j + 1]);
-    g[2 * j] += Edn[0](j) * cosuj * cosvj + Edn[1](j) * cosuj * sinvj +
-                Edn[2](j) * -sinuj;
-    g[2 * j + 1] += Edn[0](j) * -sinuj * sinvj + Edn[1](j) * sinuj * cosvj;
+    const double sinuj = sin(x[2 * j]);
+    const double cosuj = cos(x[2 * j]);
+    const double sinvj = sin(x[2 * j + 1]);
+    const double cosvj = cos(x[2 * j + 1]);
+
+#pragma omp critical
+    {
+      g[2 * j] += Edn[0](j) * cosuj * cosvj + Edn[1](j) * cosuj * sinvj +
+                  Edn[2](j) * -sinuj;
+      g[2 * j + 1] += Edn[0](j) * -sinuj * sinvj + Edn[1](j) * sinuj * cosvj;
+    }
   }
 }
 
